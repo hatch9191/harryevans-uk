@@ -1,26 +1,192 @@
 @import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
 
+/*
+  Editorial palette: warm paper ground, warm near-black ink, single oxblood
+  accent. Light only — there is deliberately no dark mode.
+*/
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  color-scheme: light;
+
+  /* Ground */
+  --paper: oklch(0.978 0.008 85);
+  --paper-raised: oklch(0.955 0.011 83);
+  --paper-deep: oklch(0.928 0.013 82);
+
+  /* Ink */
+  --ink: oklch(0.185 0.011 55);
+  --ink-muted: oklch(0.455 0.014 60);
+  --ink-faint: oklch(0.635 0.012 70);
+
+  /* Hairlines */
+  --rule: oklch(0.878 0.011 80);
+  --rule-strong: oklch(0.795 0.013 78);
+
+  /* Oxblood */
+  --brand: oklch(0.425 0.125 28);
+  --brand-hover: oklch(0.355 0.115 28);
+
+  /* shadcn semantic tokens mapped onto the palette above */
+  --background: var(--paper);
+  --foreground: var(--ink);
+  --card: var(--paper);
+  --card-foreground: var(--ink);
+  --popover: var(--paper);
+  --popover-foreground: var(--ink);
+  --primary: var(--ink);
+  --primary-foreground: var(--paper);
+  --secondary: var(--paper-raised);
+  --secondary-foreground: var(--ink);
+  --muted: var(--paper-raised);
+  --muted-foreground: var(--ink-muted);
+  --accent: var(--paper-deep);
+  --accent-foreground: var(--ink);
+  --destructive: oklch(0.505 0.175 27);
+  --border: var(--rule);
+  --input: var(--rule-strong);
+  --ring: var(--brand);
+
+  /* Near-square. Printed matter does not have 10px corners. */
+  --radius: 0.125rem;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+
+  --color-paper: var(--paper);
+  --color-paper-raised: var(--paper-raised);
+  --color-paper-deep: var(--paper-deep);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-faint: var(--ink-faint);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-brand: var(--brand);
+  --color-brand-hover: var(--brand-hover);
+
+  --font-sans: var(--font-plex-sans);
+  --font-mono: var(--font-plex-mono);
+  --font-display: var(--font-instrument-serif);
+  --font-heading: var(--font-instrument-serif);
+
+  --text-eyebrow: 0.6875rem;
+  --text-eyebrow--line-height: 1.2;
+  --text-display: clamp(2.75rem, 7.5vw, 5.75rem);
+  --text-display--line-height: 0.94;
+  --text-title: clamp(1.875rem, 3.4vw, 2.75rem);
+  --text-title--line-height: 1.08;
+  --text-lede: clamp(1.1875rem, 1.7vw, 1.4375rem);
+  --text-lede--line-height: 1.5;
+
+  --radius-sm: calc(var(--radius) * 0.6);
+  --radius-md: calc(var(--radius) * 0.8);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) * 1.4);
+  --radius-2xl: calc(var(--radius) * 1.8);
+  --radius-3xl: calc(var(--radius) * 2.2);
+  --radius-4xl: calc(var(--radius) * 2.6);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+
+  html {
+    @apply font-sans;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-size: 1.0625rem;
+    line-height: 1.65;
+  }
+
+  /* Instrument Serif is set tight and large; it needs negative tracking. */
+  .font-display,
+  .font-heading {
+    letter-spacing: -0.021em;
+    font-weight: 400;
+  }
+
+  ::selection {
+    background: var(--brand);
+    color: var(--paper);
+  }
+
+  a {
+    text-underline-offset: 0.22em;
+    text-decoration-thickness: from-font;
+  }
+
+  :focus-visible {
+    outline: 2px solid var(--brand);
+    outline-offset: 3px;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@utility eyebrow {
+  @apply font-mono text-eyebrow uppercase text-ink-faint;
+  letter-spacing: 0.13em;
+}
+
+/*
+  Very fine grain over the whole page. Gives the paper ground a printed
+  quality instead of reading as flat #fff. Kept low enough to be felt
+  rather than seen.
+*/
+@utility grain {
+  position: fixed;
+  inset: 0;
+  z-index: 50;
+  pointer-events: none;
+  opacity: 0.028;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
+}
+
+@keyframes rise {
+  from {
+    opacity: 0;
+    transform: translateY(0.75rem);
+  }
+  to {
+    opacity: 1;
+    transform: none;
+  }
+}
+
+/* One orchestrated page load. Staggered by --step on each child. */
+@utility rise {
+  animation: rise 0.72s cubic-bezier(0.16, 1, 0.3, 1) both;
+  animation-delay: calc(var(--step, 0) * 90ms);
 }

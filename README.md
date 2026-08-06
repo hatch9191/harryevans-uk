@@ -1,36 +1,67 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# harryevans.uk
 
-## Getting Started
+Personal site. Next.js 16 App Router, React 19, Tailwind CSS v4, shadcn/ui (Radix base), deployed on Vercel.
 
-First, run the development server:
+Replaces the 2021 Create React App site (`hatch9191/personal_portfolio`, Netlify).
 
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
+npm run dev     # http://localhost:3000
+npm run build
+npm run lint
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+## The one rule about this site
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+**The public site is capability-only. Commercial terms live on `/hire` and nowhere else.**
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Recruiters and investors both look me up, and during MiM's fundraise the public
+site has to read the same to both. So availability, day rate, IR35 stance and
+insurance appear only on `/hire`, which is:
 
-## Learn More
+- `noindex, nofollow, nocache` via route metadata
+- disallowed in `src/app/robots.ts`
+- excluded from `src/app/sitemap.ts`
+- absent from the site nav
 
-To learn more about Next.js, take a look at the following resources:
+It stays reachable by anyone with the link. It just will not surface in a search
+for my name. The URL is distributed via the CV header, the LinkedIn Featured
+section and recruiter messages.
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+If you add a route, decide which side of that line it sits on before building it.
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+## Content lives in one place
 
-## Deploy on Vercel
+`src/lib/site.ts` holds everything that also appears on the CV and LinkedIn —
+terms, stack, the recruiter qualifying pitch. Recruiters cross-check these, so
+change them there and then reconcile the CV and LinkedIn to match. The
+qualifying pitch in particular must stay word-for-word identical across the
+site, the CV header, LinkedIn messages and the email signature.
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Design
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+Editorial: warm paper ground, warm near-black ink, single oxblood accent,
+Instrument Serif display over IBM Plex Sans and Mono, hairline rules, near-zero
+border radius, fine grain overlay. Light only — **there is deliberately no dark
+mode**.
+
+The whole shadcn theme layer is overwritten in `src/app/globals.css`. Stock
+shadcn — slate and zinc, `--radius: 0.625rem`, Geist, a dark mode toggle — is
+the most recognisable generated-in-an-afternoon look going, which is the
+opposite of the point. Semantic shadcn tokens (`--primary`, `--muted`, and so
+on) are mapped onto the palette so any component added later inherits it.
+
+Custom utilities: `eyebrow` (mono caps label), `grain`, `rise` (staggered page
+load, set `--step` per child).
+
+## To do
+
+- **Drop the CV into `public/`** as `Harry Evans - Senior Full Stack Engineer.pdf`
+  and `.docx`. The download buttons on `/hire` are resolved at build time against
+  `public/` and only render once the files exist, so until then the page falls
+  back to "email me and I'll send it over". No dead links either way.
+- Add the company number to `TERMS` in `src/lib/site.ts` once Companies House
+  issues it.
+- Case studies at `/work/mim`, `/work/togather-quoting`, `/work/togather-platform`,
+  then add them to the nav and `sitemap.ts`.
+- Writing section at `/writing` with MDX.
