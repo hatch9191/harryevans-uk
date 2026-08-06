@@ -15,9 +15,6 @@ export const metadata: Metadata = {
     nocache: true,
     googleBot: { index: false, follow: false },
   },
-  alternates: {
-    canonical: null,
-  },
 };
 
 const DOWNLOADS = [

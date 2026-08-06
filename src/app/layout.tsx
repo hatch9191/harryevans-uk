@@ -46,9 +46,6 @@ export const metadata: Metadata = {
     description:
       "I take products from nothing to production. TypeScript, Next.js, GraphQL, PostgreSQL, Terraform on GCP.",
   },
-  alternates: {
-    canonical: "/",
-  },
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

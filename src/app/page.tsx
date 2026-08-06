@@ -1,6 +1,16 @@
 import type { CSSProperties } from "react";
+import type { Metadata } from "next";
 
 import { SITE, STACK } from "@/lib/site";
+
+/**
+ * Canonical is set per page rather than on the root layout — pages inherit
+ * layout metadata, so a canonical there would point every future case study
+ * at the homepage.
+ */
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
 const step = (n: number) => ({ "--step": n }) as CSSProperties;
 
