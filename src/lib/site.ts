@@ -47,7 +47,7 @@ export const TERMS = [
   { label: "Location", value: "London hybrid or fully remote" },
   { label: "Rate", value: "£600/day" },
   { label: "IR35", value: "Outside IR35 preferred" },
-  { label: "Entity", value: "Harry Evans Software Ltd" },
+  { label: "Entity", value: "Harry Evans Software Ltd · Company no. 17385844" },
   {
     label: "Insurance",
     value:

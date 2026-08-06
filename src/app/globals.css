@@ -17,7 +17,8 @@
   /* Ink */
   --ink: oklch(0.185 0.011 55);
   --ink-muted: oklch(0.455 0.014 60);
-  --ink-faint: oklch(0.635 0.012 70);
+  /* Quiet, but dark enough to clear 4.5:1 at the 11px the eyebrow labels use. */
+  --ink-faint: oklch(0.525 0.014 68);
 
   /* Hairlines */
   --rule: oklch(0.878 0.011 80);

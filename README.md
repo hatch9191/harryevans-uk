@@ -54,14 +54,16 @@ on) are mapped onto the palette so any component added later inherits it.
 Custom utilities: `eyebrow` (mono caps label), `grain`, `rise` (staggered page
 load, set `--step` per child).
 
+`npm run check-contrast` verifies the palette against WCAG AA. The `eyebrow`
+labels are 11px, so `--ink-faint` has very little headroom above the 4.5:1
+floor — run it after touching any colour token.
+
 ## To do
 
 - **Drop the CV into `public/`** as `Harry Evans - Senior Full Stack Engineer.pdf`
   and `.docx`. The download buttons on `/hire` are resolved at build time against
   `public/` and only render once the files exist, so until then the page falls
   back to "email me and I'll send it over". No dead links either way.
-- Add the company number to `TERMS` in `src/lib/site.ts` once Companies House
-  issues it.
 - Case studies at `/work/mim`, `/work/togather-quoting`, `/work/togather-platform`,
   then add them to the nav and `sitemap.ts`.
 - Writing section at `/writing` with MDX.
