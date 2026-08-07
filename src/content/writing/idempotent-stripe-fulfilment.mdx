@@ -1,0 +1,83 @@
+There is a moment in every payments integration where you have to decide what happens when Stripe tells you the same thing twice. It is tempting to treat it as an edge case. It is not an edge case — it is the normal operation of a system that guarantees at-least-once delivery, and if you have not designed for it you have simply not seen it yet.
+
+On the marketplace I build, a card payment produces two independent notifications that it worked:
+
+1. The browser confirms the payment intent and calls a GraphQL mutation, because the customer is sitting there looking at a spinner and deserves an answer inside a second.
+2. Stripe sends `payment_intent.succeeded` to a webhook endpoint, because the browser is not a reliable narrator — the customer can close the tab, lose signal, or have a laptop that goes to sleep mid-redirect.
+
+Either can arrive first. Both can arrive twice. Stripe redelivers on any non-2xx response, and it makes no promise at all about ordering between event types.
+
+Fulfilment has to happen exactly once, because it moves the payment into a held state, activates the request and opens the first stage of the service the customer bought. Doing that twice does not just produce a duplicate row. It sends a second "your stylist is ready" email, and it resets a stage the customer might already have started.
+
+## The version that looks right
+
+Here is what almost everybody writes first, including me:
+
+```ts
+const payment = await db.payment.findUnique({ where: { stripePaymentIntentId } });
+
+if (payment.state !== PaymentState.PENDING) {
+  return;
+}
+
+await db.payment.update({
+  where: { id: payment.id },
+  data: { state: PaymentState.HELD, paidAt: new Date() },
+});
+```
+
+Read the state, check the state, write the state. It reads like a guard and it is not one. Between the read on line one and the write on line seven there is a network round trip, and in that window a second caller can execute the same three lines against the same row. Both read `PENDING`. Both pass the check. Both write.
+
+Wrapping it in a transaction does not save you either, unless you are running at serializable isolation and are ready to handle the retries that come with it. At the default `READ COMMITTED` that most Postgres deployments use, two concurrent transactions can both read the old value quite happily.
+
+## Put the check inside the write
+
+The fix is to stop treating the state as something you read and start treating it as something you compete for. Move the condition into the `where` clause, so the database decides the winner:
+
+```ts
+const updated = await tx.payment.updateMany({
+  where: { id: payment.id, state: PaymentState.PENDING },
+  data:  { state: PaymentState.HELD, paidAt: new Date(), stripeProcessingFee },
+});
+
+if (updated.count === 0) {
+  return ALREADY_PROCESSED;
+}
+```
+
+`updateMany` returns a count rather than throwing when it matches nothing, and that count is the whole mechanism. Exactly one caller will find a row in `PENDING` and update it. Every other caller — the duplicate webhook, the racing mutation, the retry from twenty minutes ago that has finally given up being delivered in order — matches zero rows and gets `count === 0`.
+
+There is no lock to acquire, no advisory lock to remember to release, and no serializable retry loop. It is a single statement, and the atomicity is the one guarantee every relational database gives you for free.
+
+The rest of the fulfilment work goes inside the same transaction as the winning update, so it either all happens or none of it does:
+
+```ts
+await tx.request.update({
+  where: { id: payment.requestId },
+  data:  { state: RequestState.ACTIVE },
+});
+```
+
+## Then answer 200 anyway
+
+This is the part people miss, and it is the difference between a system that is idempotent and one that is idempotent and also quiet.
+
+When the duplicate caller gets `count === 0`, the temptation is to treat it as a failure — it did not do the thing it was asked to do, so surely that is a 409. Return anything outside the 2xx range to Stripe and it will redeliver the event. On a schedule. For days.
+
+`ALREADY_PROCESSED` is a success. The desired state of the world is that this payment is fulfilled, and it is. Answer 200, log it at info so you can see the duplicates in your data, and let Stripe stop.
+
+## What this does not give you
+
+Two honest limitations, because the pattern is narrower than it first appears.
+
+**It is idempotent per transition, not per event.** The guard is `state = PENDING`, so it protects the `PENDING → HELD` transition specifically. It does not know one Stripe event from another. If you have several event types that can move the same row, you eventually want a table of processed event IDs — a unique index on the Stripe event ID, written in the same transaction — so that replay is safe regardless of which state the row happens to be in.
+
+**It does not make your side effects transactional.** Emails, push notifications and analytics all happen after the commit, and a crash in between loses them silently. The correct shape is a transactional outbox: write the *intent* to send inside the transaction, and have something else drain it. Until you need that, catch and log the failures rather than letting a notification error roll back a payment that genuinely succeeded — the money being right matters more than the email.
+
+## The general form
+
+Nothing here is really about Stripe. Any time you have a state transition that must happen once, driven by a source that retries, the same shape applies:
+
+> Do not read the state and then write it. Write it conditionally on the state you expect, and let the row count tell you whether you were the one who did it.
+
+It is four lines of difference, and it is the difference between a payments integration that works and one that works until it gets busy.

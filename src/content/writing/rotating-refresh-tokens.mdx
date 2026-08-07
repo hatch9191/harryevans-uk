@@ -1,0 +1,56 @@
+Refresh token rotation is a good security control. Each time you exchange a refresh token for a new access token, the provider issues a new refresh token and invalidates the old one. A stolen token is useful exactly once, and if both the attacker and the legitimate client try to use it, the provider can detect the reuse and kill the whole grant.
+
+It is also, quietly, a concurrency problem, and the documentation almost never mentions that part.
+
+## What changes when a token becomes single-use
+
+Under the older model, a refresh token was a long-lived credential you could keep in a row and use whenever the access token expired. Two processes refreshing at once was wasteful but harmless — both got a valid access token, and the refresh token stayed exactly as it was.
+
+With rotation, that stops being true. The stored refresh token is no longer a credential, it is a *position in a chain*. Reading it, spending it and writing the successor back is a read-modify-write, and if two requests do it concurrently, both read position **n**, both spend it, and the provider issues two independent successors. Only one of those gets written to your database last, and the other is now the token the provider considers current. Or, if the provider implements reuse detection strictly, it sees position **n** spent twice, concludes the token has been stolen, and revokes the grant entirely.
+
+Either way the outcome is user-visible: the integration disconnects, and the user has to reauthorise something they never touched.
+
+The unpleasant part is how well this hides. It requires two refreshes to overlap within the round-trip time of the provider's token endpoint — a window of a few hundred milliseconds, reachable only when the access token has just expired and more than one thing wants it at once. At low traffic you may never see it. At higher traffic it becomes a steady trickle of "my calendar keeps disconnecting" tickets with no reproduction steps.
+
+## Where the overlap comes from
+
+It is almost never one user clicking twice. In my case the scheduling integration is refreshed from three places: a GraphQL query the client calls when it needs a token, the provisioning path that refreshes if a connection already exists, and a proxy route the vendor's own React components call on mount. Render two components that both need a token, on a page that also runs the query, at the moment the old one expires, and you have three concurrent refreshes without a single unusual user action.
+
+Any of these is fine alone. The bug is in the composition, which is why it does not show up in the code review of any individual one of them.
+
+## Serialise on the row you are updating
+
+The fix does not need a distributed lock, a Redis mutex or a dedicated service. The state you are protecting already lives in a row in your database, so lock that row:
+
+```sql
+SELECT refresh_token FROM calendar_connection
+WHERE user_id = $1
+FOR UPDATE;
+```
+
+Inside a transaction, `FOR UPDATE` makes the second concurrent request wait rather than proceed. When it acquires the lock, it re-reads — and this is the bit that matters — and finds the token the first request has just written, along with a fresh expiry. It then discovers it does not need to refresh at all, and returns the token that is already there.
+
+The shape is:
+
+1. Begin a transaction and take the row lock.
+2. Re-read the connection *inside* the lock.
+3. If the access token is still valid — with a margin, say sixty seconds — return it and do nothing else.
+4. Otherwise spend the refresh token, write the successor and the new expiry, and commit.
+
+Step 3 is what turns the lock from a serialisation bottleneck into a single-flight cache. Under a burst of ten concurrent requests, exactly one performs a network call and nine wait a few milliseconds and get the result. Without the re-read, all ten refresh in sequence and you have made the problem slower rather than fixed it.
+
+Add a margin on the expiry check. Treating a token that expires in four seconds as valid means handing it to a caller who will use it in five.
+
+## If you cannot take a lock
+
+Two workable alternatives.
+
+**Single-flight in the process.** Keep a map of in-flight refresh promises keyed by user, and have concurrent callers await the existing promise rather than starting their own. This is a handful of lines and removes the overlap within one instance — which, if you are running a single container, is all of it. It does nothing across instances, so treat it as a complement to the row lock rather than a replacement.
+
+**Optimistic concurrency.** Write the successor conditionally on the token you spent still being the current one, in the style of a compare-and-set. The loser detects that it lost and re-reads instead of overwriting. This avoids the lock but does not avoid the wasted refresh, so with strict reuse detection at the provider you may still trip the alarm. The lock is better where you can take one.
+
+## The general lesson
+
+Rotation converts an idempotent operation into a non-idempotent one, and nothing in the type signature tells you. `getAccessToken()` looks like a read. Once the provider rotates on every use it is a write to shared mutable state held on someone else's server, and it needs the same care you would give any other write to shared mutable state.
+
+Worth grepping your codebase for how many places call it.

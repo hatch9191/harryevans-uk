@@ -175,6 +175,186 @@
   background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='180' height='180'%3E%3Cfilter id='g'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.82' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='180' height='180' filter='url(%23g)'/%3E%3C/svg%3E");
 }
 
+/*
+  Long-form body copy. Hand-built rather than @tailwindcss/typography — the
+  plugin's scale and colours are tuned for a different kind of page, and
+  overriding it costs more than writing the twenty rules that matter.
+*/
+@layer components {
+  .prose {
+    color: var(--ink-muted);
+    max-width: 68ch;
+  }
+
+  .prose > * + * {
+    margin-top: 1.35em;
+  }
+
+  .prose strong {
+    color: var(--ink);
+    font-weight: 600;
+  }
+
+  .prose em {
+    font-style: italic;
+  }
+
+  .prose a {
+    color: var(--ink);
+    text-decoration: underline;
+    text-decoration-color: var(--rule-strong);
+    transition: color 150ms ease, text-decoration-color 150ms ease;
+  }
+
+  .prose a:hover {
+    color: var(--brand);
+    text-decoration-color: var(--brand);
+  }
+
+  .prose h2,
+  .prose h3 {
+    color: var(--ink);
+    font-family: var(--font-display);
+    line-height: 1.2;
+    letter-spacing: -0.021em;
+    margin-top: 2.6em;
+  }
+
+  .prose h2 {
+    font-size: 1.95rem;
+  }
+
+  .prose h3 {
+    font-size: 1.6rem;
+  }
+
+  .prose h4 {
+    color: var(--ink);
+    font-weight: 600;
+    font-size: 1rem;
+    margin-top: 2.2em;
+  }
+
+  .prose h2 + *,
+  .prose h3 + *,
+  .prose h4 + * {
+    margin-top: 0.7em;
+  }
+
+  .prose ul,
+  .prose ol {
+    padding-left: 0;
+    list-style: none;
+  }
+
+  .prose li {
+    position: relative;
+    padding-left: 1.45em;
+  }
+
+  .prose li + li {
+    margin-top: 0.7em;
+  }
+
+  .prose ul > li::before {
+    content: "";
+    position: absolute;
+    left: 0.1em;
+    top: 0.72em;
+    width: 0.5em;
+    height: 1px;
+    background: var(--rule-strong);
+  }
+
+  .prose ol {
+    counter-reset: prose-counter;
+  }
+
+  .prose ol > li {
+    counter-increment: prose-counter;
+  }
+
+  .prose ol > li::before {
+    content: counter(prose-counter);
+    position: absolute;
+    left: 0;
+    top: 0.1em;
+    font-family: var(--font-mono);
+    font-size: 0.8em;
+    color: var(--ink-faint);
+  }
+
+  .prose code {
+    font-family: var(--font-mono);
+    font-size: 0.855em;
+    color: var(--ink);
+    background: var(--paper-deep);
+    padding: 0.12em 0.36em;
+    border-radius: var(--radius-sm);
+  }
+
+  .prose pre {
+    background: var(--paper-raised);
+    border: 1px solid var(--rule);
+    border-radius: var(--radius);
+    padding: 1.15rem 1.3rem;
+    overflow-x: auto;
+    font-size: 0.85rem;
+    line-height: 1.65;
+    color: var(--ink);
+  }
+
+  .prose pre code {
+    background: none;
+    padding: 0;
+    font-size: inherit;
+  }
+
+  .prose blockquote {
+    border-left: 2px solid var(--brand);
+    padding-left: 1.3rem;
+    color: var(--ink);
+    font-family: var(--font-display);
+    font-size: 1.32rem;
+    line-height: 1.35;
+  }
+
+  .prose hr {
+    border: 0;
+    border-top: 1px solid var(--rule);
+    margin-block: 2.6em;
+  }
+
+  .prose table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.94rem;
+  }
+
+  .prose th {
+    text-align: left;
+    font-family: var(--font-mono);
+    font-size: var(--text-eyebrow);
+    letter-spacing: 0.13em;
+    text-transform: uppercase;
+    color: var(--ink-faint);
+    font-weight: 400;
+    padding-bottom: 0.7rem;
+    border-bottom: 1px solid var(--rule-strong);
+  }
+
+  .prose td {
+    padding-block: 0.7rem;
+    border-bottom: 1px solid var(--rule);
+    vertical-align: top;
+  }
+
+  .prose td:first-child {
+    color: var(--ink);
+    padding-right: 1.5rem;
+  }
+}
+
 @keyframes rise {
   from {
     opacity: 0;
