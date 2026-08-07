@@ -1,0 +1,71 @@
+Every monorepo I have worked in has contained a package that was going to be shared with the mobile app. Some of them contained the mobile app. Almost none of them contained a package that could actually be shared, because somewhere in the six months between drawing the boundary and needing it, somebody imported `next/navigation` to fix a bug on a Tuesday and nobody noticed.
+
+This is not a discipline problem. It is a feedback problem. The cost of that import lands months later on somebody else, and by then it is not one import, it is four hundred.
+
+## The boundary is a claim you have to be able to check
+
+When I started the current platform I knew a React Native app was coming, and I knew "we will extract the shared logic later" is a promise with a very poor completion rate. So the split went in on day one: business logic, design tokens, types, the API layer, view-model hooks and generic utilities live in packages that are not allowed to know a browser exists. Everything web — Chakra components, Next routes, anything that reads a cookie — lives in the app.
+
+The useful question is not *where do I put this file*. It is *what stops the boundary being wrong in March*.
+
+The answer turned out to be about fifteen lines of ESLint config:
+
+```js
+// packages/eslint-config/shared.mjs
+"no-restricted-imports": ["error", {
+  patterns: [
+    "next/*", "react-dom", "react-dom/*",
+    "@chakra-ui/*", "@mui/*",
+    "@workos-inc/authkit-nextjs", "@workos-inc/node",
+  ],
+}],
+"no-restricted-globals": ["error", "window", "document"],
+```
+
+Applied to the seven packages that claim to be platform-agnostic, and to nothing else. The apps can import whatever they like.
+
+What makes this work is not the rule, it is *when* it fires. The violation is caught in the editor, in the moment you are about to make it, by the person who has the context to solve it properly. That is the only moment the fix is cheap. A dependency audit six months later is archaeology.
+
+## Draw the line at capabilities, not at layers
+
+The rule is easy. The interesting question is what you do when shared code genuinely needs something platform-specific — and it always does, almost immediately. A view-model hook that fetches data needs an auth token. On web that is a cookie; on iOS it is the keychain.
+
+The instinct is to pass the token in as a parameter, and it works for one capability. By the fourth you are threading five arguments through every hook so that the leaf can read a value, and you have reinvented prop drilling at package scope.
+
+What worked instead was defining the capability as an interface and letting each app supply it:
+
+```ts
+export type AuthAdapter = {
+  getToken: () => Promise<string | null>;
+  signOut: () => Promise<void>;
+};
+```
+
+Shared code calls `usePlatform().auth.getToken()` and has no opinion about where it comes from. The web app implements it over cookies; the mobile app will implement it over secure storage. There are a handful of these — auth, key-value storage, analytics, routing — and the discipline is that you add one when a capability genuinely differs per platform, not every time you want to avoid thinking about where something belongs.
+
+The router adapter is the one I would recommend to anybody, because it is the one people skip. Exposing `pathname`, `searchParams`, `push` and `replace` behind an interface means a hook that syncs filter state to the URL works on both platforms. Without it, that hook imports `next/navigation` and every screen it powers is web-only forever.
+
+## The decision tree that stopped the arguments
+
+Boundaries only hold if "where does this go" has an answer that does not require a meeting. Ours fits on a card:
+
+- Pure primitive — string, date, currency formatting → `utils`
+- Business logic, no DOM, no React → `domain`
+- Cross-app type or enum → `types`
+- GraphQL operation, generated hook, wire-to-form mapper → `api`
+- Touches auth, storage, navigation, analytics, files or push → a `platform` adapter
+- Page-level data and handlers shared by web and mobile → `data`
+- A Chakra component → the web UI package
+- A Next route, a server helper, anything DOM-coupled → the app
+
+With one tiebreak: **when unsure, choose the most portable package that fits.** It is much easier to move code outward toward the app later than to untangle it from an app once it has grown roots there.
+
+## What it costs
+
+I want to be straight about this, because the honest answer is that it is annoying several times a week.
+
+Writing an adapter for a capability you need exactly once feels like ceremony. There were stretches where I was clearly paying a tax for a mobile app that did not exist and might never. Every time I wanted to reach for `window.localStorage` in a hook and had to go and define a `KeyValueStore` instead, the boundary felt like an indulgence.
+
+Two things make me confident it was right. The first is that the alternative is not "do it later cheaply", it is "do it later expensively or not at all", and I have watched enough teams pick the third option. The second is that the constraint improved the code independently of mobile: a package that cannot touch the DOM cannot hide state in it, so the business logic ended up as pure functions over explicit inputs, which is a much nicer thing to test and a much nicer thing to read.
+
+The mobile app is still a placeholder directory and a README. The boundary is real anyway, and it is real because a linter checks it every time anybody saves a file.

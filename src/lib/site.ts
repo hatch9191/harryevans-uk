@@ -9,13 +9,27 @@ export const SITE = {
   role: "Senior Full Stack Engineer",
   location: "Hackney, London",
   url: "https://harryevans.uk",
-  email: "harry.evans9191@gmail.com",
+  email: "harry@harryevans.uk",
   phone: "07969 244 729",
+} as const;
+
+/**
+ * Case studies and writing are written but not yet verified for publication,
+ * so they are held back rather than deleted. Flipping a flag to true restores
+ * the nav link, the home page section, the routes and the sitemap entries —
+ * there is nothing else to remember.
+ */
+export const FEATURES = {
+  WORK: false,
+  WRITING: false,
 } as const;
 
 export const ROUTES = {
   HOME: "/",
+  WORK: "/#work",
+  WRITING: "/writing",
   HIRE: "/hire",
+  LINKEDIN_BANNER: "/linkedin-banner",
 } as const;
 
 export const LINKS = {
@@ -65,7 +79,14 @@ export const QUALIFYING_PITCH = [
   "£600/day, outside IR35 preferred. Own limited company, PI insured.",
 ] as const;
 
+/**
+ * Served under a clean slug, but downloaded under the full name — a recruiter
+ * with three hundred of these in a folder should be able to identify mine
+ * without opening it, and a URL with spaces in it is a URL that gets mangled.
+ */
+export const CV_DOWNLOAD_NAME = "Harry Evans - Senior Full Stack Engineer";
+
 export const CV_FILES = {
-  PDF: "/Harry Evans - Senior Full Stack Engineer.pdf",
-  DOCX: "/Harry Evans - Senior Full Stack Engineer.docx",
+  PDF: "/harry-evans-cv.pdf",
+  DOCX: "/harry-evans-cv.docx",
 } as const;

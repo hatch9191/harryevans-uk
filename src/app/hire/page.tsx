@@ -3,7 +3,14 @@ import { join } from "node:path";
 
 import type { Metadata } from "next";
 
-import { CV_FILES, QUALIFYING_PITCH, SITE, STACK, TERMS } from "@/lib/site";
+import {
+  CV_DOWNLOAD_NAME,
+  CV_FILES,
+  QUALIFYING_PITCH,
+  SITE,
+  STACK,
+  TERMS,
+} from "@/lib/site";
 
 export const metadata: Metadata = {
   title: "Contract availability",
@@ -18,8 +25,8 @@ export const metadata: Metadata = {
 };
 
 const DOWNLOADS = [
-  { label: "CV (PDF)", href: CV_FILES.PDF },
-  { label: "CV (Word)", href: CV_FILES.DOCX },
+  { label: "CV (PDF)", href: CV_FILES.PDF, extension: "pdf" },
+  { label: "CV (Word)", href: CV_FILES.DOCX, extension: "docx" },
 ];
 
 /**
@@ -96,7 +103,7 @@ export default function HirePage() {
               <li key={file.href}>
                 <a
                   href={file.href}
-                  download
+                  download={`${CV_DOWNLOAD_NAME}.${file.extension}`}
                   className="inline-block border border-ink bg-ink px-5 py-2.5 font-mono text-eyebrow uppercase tracking-[0.13em] text-paper transition-colors hover:border-brand hover:bg-brand"
                 >
                   {file.label}

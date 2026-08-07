@@ -33,6 +33,15 @@ const oklchToSrgb = (L, C, H) => {
   });
 };
 
+const hexToSrgb = (hex) => {
+  const value = hex.replace("#", "");
+  return [0, 2, 4].map((i) => parseInt(value.slice(i, i + 2), 16));
+};
+
+/** Palette tokens are authored in oklch; the OG and banner images in hex. */
+const toSrgb = (colour) =>
+  typeof colour === "string" ? hexToSrgb(colour) : oklchToSrgb(...colour);
+
 const luminance = ([r, g, b]) => {
   const toLinear = (c) => {
     const v = c / 255;
@@ -89,13 +98,32 @@ const CHECKS = [
     px: 11,
     min: 4.5,
   },
+  /*
+    The LinkedIn banner inverts the palette onto the ink ground, so the oxblood
+    and the muted mono line both need lightening to stay legible.
+  */
+  { name: "banner paper on ink", fg: "#faf7f0", bg: "#211d18", px: 76, min: 4.5 },
+  {
+    name: "banner accent on ink",
+    fg: "#c96a5c",
+    bg: "#211d18",
+    px: 76,
+    min: 4.5,
+  },
+  {
+    name: "banner mono on ink",
+    fg: "#a3968a",
+    bg: "#211d18",
+    px: 25,
+    min: 4.5,
+  },
 ];
 
 let failed = false;
 
 for (const check of CHECKS) {
-  const fg = oklchToSrgb(...check.fg);
-  const bg = oklchToSrgb(...check.bg);
+  const fg = toSrgb(check.fg);
+  const bg = toSrgb(check.bg);
   const ratio = contrast(fg, bg);
   const pass = ratio >= check.min;
   if (!pass) {
