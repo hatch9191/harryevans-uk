@@ -56,8 +56,8 @@ export const STACK = [
  * investor looking me up during MiM's raise.
  */
 export const TERMS = [
-  { label: "Available from", value: "1 September 2026" },
-  { label: "Days", value: "Four days a week" },
+  { label: "Availability", value: "Available now" },
+  { label: "Engagement", value: "Fractional or full-time" },
   { label: "Location", value: "London hybrid or fully remote" },
   { label: "Rate", value: "£600/day" },
   { label: "IR35", value: "Outside IR35 preferred" },
@@ -75,7 +75,7 @@ export const TERMS = [
  */
 export const QUALIFYING_PITCH = [
   "Senior full stack engineer, 5 years, TypeScript / React / Next.js / Node / GraphQL / Postgres, AWS and GCP.",
-  "London, hybrid or remote. Available from 1 September 2026, four days a week.",
+  "London, hybrid or remote. Available now, fractional or full-time.",
   "£600/day, outside IR35 preferred. Own limited company, PI insured.",
 ] as const;
 
